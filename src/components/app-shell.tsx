@@ -90,12 +90,9 @@ export function AppShell({ children, role: roleProp }: { children: ReactNode; ro
         </nav>
 
         <div className="p-3 border-t border-sidebar-border">
-          <Link
-            to="/patient/settings" // placeholder
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/60"
-          >
+          <button className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/60">
             <Settings className="h-4 w-4" /> Settings
-          </Link>
+          </button>
           <Link
             to="/"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/60"
