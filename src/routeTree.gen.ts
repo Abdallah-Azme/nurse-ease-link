@@ -9,8 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PatientRouteImport } from './routes/patient'
+import { Route as NurseRouteImport } from './routes/nurse'
+import { Route as DoctorRouteImport } from './routes/doctor'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
+const PatientRoute = PatientRouteImport.update({
+  id: '/patient',
+  path: '/patient',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NurseRoute = NurseRouteImport.update({
+  id: '/nurse',
+  path: '/nurse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DoctorRoute = DoctorRouteImport.update({
+  id: '/doctor',
+  path: '/doctor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +43,72 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/doctor': typeof DoctorRoute
+  '/nurse': typeof NurseRoute
+  '/patient': typeof PatientRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/doctor': typeof DoctorRoute
+  '/nurse': typeof NurseRoute
+  '/patient': typeof PatientRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/doctor': typeof DoctorRoute
+  '/nurse': typeof NurseRoute
+  '/patient': typeof PatientRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/admin' | '/doctor' | '/nurse' | '/patient'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/admin' | '/doctor' | '/nurse' | '/patient'
+  id: '__root__' | '/' | '/admin' | '/doctor' | '/nurse' | '/patient'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  DoctorRoute: typeof DoctorRoute
+  NurseRoute: typeof NurseRoute
+  PatientRoute: typeof PatientRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/patient': {
+      id: '/patient'
+      path: '/patient'
+      fullPath: '/patient'
+      preLoaderRoute: typeof PatientRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nurse': {
+      id: '/nurse'
+      path: '/nurse'
+      fullPath: '/nurse'
+      preLoaderRoute: typeof NurseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/doctor': {
+      id: '/doctor'
+      path: '/doctor'
+      fullPath: '/doctor'
+      preLoaderRoute: typeof DoctorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +121,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  DoctorRoute: DoctorRoute,
+  NurseRoute: NurseRoute,
+  PatientRoute: PatientRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
