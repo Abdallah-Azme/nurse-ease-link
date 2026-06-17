@@ -1,3 +1,6 @@
+# Dependencies
+node_modules
+
 # Logs
 logs
 *.log
@@ -7,18 +10,41 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+# --- Next.js ---
+.next/
+out/
+*.tsbuildinfo
+.vercel
+
+# --- Environment & secrets (never commit) ---
+.env
+.env*.local
+!.env.example
+
+# Firebase service account keys (download from Firebase Console)
+*-firebase-adminsdk-*.json
+firebase-adminsdk-*.json
+service-account*.json
+serviceAccountKey.json
+
+# --- Legacy SQLite (replaced by MongoDB Atlas) ---
+/data/*
+!/data/.gitkeep
+
+# --- Legacy TanStack Start / Vite (no longer used) ---
 dist
 dist-ssr
 .output
 .vinxi
 .tanstack/**
 .nitro
-*.local
 
-# Wrangler / Cloudflare
+# Wrangler / Cloudflare (TanStack Nitro target)
 .wrangler/
 .dev.vars
+
+# Testing
+coverage/
 
 # Editor directories and files
 .vscode/*
