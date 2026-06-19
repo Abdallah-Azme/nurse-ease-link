@@ -372,7 +372,7 @@
         <h3>1. Authentication and Login</h3>
         <p><strong>Purpose:</strong> To protect patient information and make sure each person sees only the information that matches their role.</p>
         <p><strong>User experience:</strong> Users sign in and are taken to a role-specific workspace.</p>
-        <p><strong>Benefits:</strong> safer access, confidential handling of health data, and an organized entry point for care activities.</p>
+        <p><strong>Benefits:</strong> safer access, confidential handling of health data, and an organized entry point for care activities. New registrations are temporarily auto-approved so the app can be tested and used without an approval delay, while the manual approval workflow remains available for later reactivation.</p>
       </div>
       <div class="feature">
         <h3>2. Patient Overview Dashboard</h3>
@@ -481,6 +481,12 @@
         <p><strong>Purpose:</strong> To keep users informed of important events and allow them to manage how they receive updates.</p>
         <p><strong>User experience:</strong> Users can review recent notifications and adjust preferences.</p>
         <p><strong>Benefits:</strong> improves response to urgent events and respects communication needs.</p>
+      </div>
+      <div class="feature">
+        <h3>20. Gemini AI Patient Assistant</h3>
+        <p><strong>Purpose:</strong> To provide conversational, educational support directly inside the patient workspace.</p>
+        <p><strong>User experience:</strong> Patients can ask questions about readings, medications, symptoms, and care navigation in natural language and receive a live response.</p>
+        <p><strong>Benefits:</strong> improves accessibility to guidance, reduces the feel of a static help page, and makes the app more responsive. The assistant is powered by the Gemini API, uses safety-focused prompting, retries transient failures, and falls back to a lighter model when needed.</p>
       </div>
       <div class="page-footer"><div class="credit"><strong>Designed by TrustSoft</strong></div><div>Phone: 201066262190</div></div>
     </section>
@@ -622,6 +628,7 @@
         <li>Additional family or caregiver participation features where appropriate.</li>
         <li>Offline-friendly support for low-connectivity home-care settings.</li>
         <li>Accessibility improvements for patients and staff with differing digital needs.</li>
+        <li>A richer AI assistant that can reference more live patient context and clinician-approved knowledge sources.</li>
       </ul>
 
       <h2>Conclusion</h2>

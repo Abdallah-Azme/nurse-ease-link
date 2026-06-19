@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Send, Sparkles, ShieldAlert } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Loader2, Send, ShieldAlert, Sparkles } from "lucide-react";
+
+import { sendAssistantMessage } from "@/actions/assistant";
 
 type Msg = { id: string; from: "me" | "ai"; text: string };
 
@@ -12,65 +14,70 @@ const STARTERS = [
   "What should I do if I feel dizzy?",
 ];
 
-const CANNED: Record<string, string> = {
-  default:
-    "I'm here to help explain health information — I won't diagnose conditions or prescribe treatments. If something feels urgent, please contact your care team or use the Emergency button.",
-};
-
 export function AssistantChat() {
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: "1",
       from: "ai",
-      text: "Hi — I'm your CareConnect assistant. I can explain readings, medications, and general health topics. I won't diagnose or prescribe. What would you like to know?",
+      text: "Hi, I'm your CareConnect assistant. Ask me about readings, medications, or general health questions, and I'll keep it educational and safe.",
     },
   ]);
   const [input, setInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   function send(text: string) {
-    if (!text.trim()) return;
-    const me: Msg = { id: crypto.randomUUID(), from: "me", text };
-    setMessages((m) => [...m, me]);
+    const trimmed = text.trim();
+    if (!trimmed || isPending) return;
+
+    const me: Msg = { id: crypto.randomUUID(), from: "me", text: trimmed };
+    setMessages((current) => [...current, me]);
     setInput("");
-    setTimeout(() => {
-      let reply = CANNED.default;
-      const t = text.toLowerCase();
-      if (t.includes("blood pressure") || t.includes("145"))
-        reply =
-          "A reading of 145/92 mmHg falls in stage 2 hypertension range. Common causes include stress, salt intake, missed medication, or activity right before the reading. I'd suggest resting 5 minutes and rechecking, and logging it so your nurse can see the trend. I can't diagnose — but if it stays high or you feel chest pain, shortness of breath, or vision changes, use the Emergency button.";
-      else if (t.includes("metformin"))
-        reply =
-          "Metformin is taken with meals to reduce stomach upset and to match when your body processes carbohydrates from food. Skipping food can also increase nausea. Please follow your care team's instructions.";
-      else if (t.includes("blood sugar"))
-        reply =
-          "For most adults: fasting 80–130 mg/dL, and under 180 mg/dL two hours after meals are typical targets — your doctor may set personalized goals.";
-      else if (t.includes("dizzy"))
-        reply =
-          "Dizziness can come from low blood sugar, dehydration, blood pressure changes, or medication side effects. Sit or lie down, sip water, and check your sugar if you have a meter. If it doesn't resolve in a few minutes or you feel faint, contact your nurse or use Emergency.";
-      const ai: Msg = { id: crypto.randomUUID(), from: "ai", text: reply };
-      setMessages((m) => [...m, ai]);
-    }, 600);
+    setError(null);
+
+    startTransition(async () => {
+      const result = await sendAssistantMessage(trimmed);
+      if (!result.ok) {
+        setError(result.message);
+        setMessages((current) => [
+          ...current,
+          {
+            id: crypto.randomUUID(),
+            from: "ai",
+            text: "I couldn't reach the assistant right now. Please try again in a moment, or use the care team chat if this is urgent.",
+          },
+        ]);
+        return;
+      }
+
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), from: "ai", text: result.data.reply },
+      ]);
+    });
   }
 
   return (
-    <div className="rounded-2xl border bg-card flex flex-col h-[calc(100vh-260px)] min-h-[480px] overflow-hidden">
-      <div className="px-4 py-3 border-b bg-accent/30 flex items-center gap-2 text-sm">
+    <div className="flex h-[calc(100vh-260px)] min-h-[480px] flex-col overflow-hidden rounded-2xl border bg-card">
+      <div className="flex items-center gap-2 border-b bg-accent/30 px-4 py-3 text-sm">
         <ShieldAlert className="h-4 w-4 text-warning" />
         <span className="text-muted-foreground">
-          This assistant explains and educates — it does{" "}
-          <strong className="text-foreground">not</strong> diagnose or prescribe.
+          This assistant explains and educates. It does not diagnose, prescribe, or replace your
+          clinician.
         </span>
       </div>
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
         {messages.map((m) => (
           <div key={m.id} className={`flex gap-3 ${m.from === "me" ? "justify-end" : ""}`}>
-            {m.from === "ai" && (
-              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground grid place-items-center shrink-0">
+            {m.from === "ai" ? (
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
                 <Sparkles className="h-4 w-4" />
               </div>
-            )}
+            ) : null}
             <div
-              className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${m.from === "me" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}
+              className={`max-w-[78%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                m.from === "me" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+              }`}
             >
               {m.text}
             </div>
@@ -78,17 +85,18 @@ export function AssistantChat() {
         ))}
       </div>
       <div className="border-t p-3">
-        <div className="flex flex-wrap gap-2 mb-3">
+        <div className="mb-3 flex flex-wrap gap-2">
           {STARTERS.map((s) => (
             <button
               key={s}
               onClick={() => send(s)}
-              className="text-xs rounded-full border bg-background px-3 py-1.5 hover:bg-accent"
+              className="rounded-full border bg-background px-3 py-1.5 text-xs hover:bg-accent"
             >
               {s}
             </button>
           ))}
         </div>
+        {error ? <p className="mb-2 text-xs text-destructive">{error}</p> : null}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -99,11 +107,19 @@ export function AssistantChat() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about a reading, medication, or symptom…"
+            placeholder="Ask about a reading, medication, or symptom..."
             className="flex-1 rounded-xl border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <button className="inline-flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90">
-            <Send className="h-4 w-4" /> Send
+          <button
+            disabled={isPending}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            Send
           </button>
         </form>
       </div>

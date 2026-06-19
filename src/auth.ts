@@ -48,9 +48,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = String(credentials.email).trim().toLowerCase();
         const password = String(credentials.password);
         const user = await getUserByEmail(email);
-        if (!user || (user.status && user.status !== "active")) return null;
+        if (!user) return null;
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
+        if (user.status && user.status !== "active") {
+          throw new Error("ACCOUNT_PENDING_APPROVAL");
+        }
         return {
           id: user.id,
           email: user.email,

@@ -19,16 +19,16 @@ export function useRole(): [RoleSlug, (r: RoleSlug) => void] {
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   useEffect(() => {
     const stored = (typeof window !== "undefined" && localStorage.getItem(THEME_KEY)) as
       | "light"
       | "dark"
       | null;
-    const initial =
-      stored ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const initial = stored ?? "dark";
     setTheme(initial);
     document.documentElement.classList.toggle("dark", initial === "dark");
+    localStorage.setItem(THEME_KEY, initial);
   }, []);
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark";

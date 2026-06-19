@@ -16,7 +16,7 @@ import { requireRoleAction } from "@/lib/safe-action";
 
 export async function registerAccount(
   input: RegistrationInput,
-): Promise<ActionResult<{ role: "patient" | "nurse" | "doctor"; status: "active" | "pending" }>> {
+): Promise<ActionResult<{ role: "patient" | "nurse" | "doctor"; status: "active" }>> {
   const parsed = registrationSchema.safeParse(input);
   if (!parsed.success) {
     return fail("Please correct the highlighted fields.", "validation_error", {
@@ -26,7 +26,7 @@ export async function registerAccount(
 
   const data = parsed.data;
   const id = crypto.randomUUID();
-  const status = data.role === "patient" ? "active" : "pending";
+  const status = "active" as const;
 
   try {
     const passwordHash = await bcrypt.hash(data.password, 12);

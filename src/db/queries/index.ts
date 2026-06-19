@@ -298,10 +298,12 @@ export async function getOutcomeSnapshotsForPatient(patientId: string) {
 
 export async function getPalliativeProgramMetrics() {
   const { symptomCheckins, visitSchedules, outcomeSnapshots, medications } = await collections();
-  const checkins = await symptomCheckins.find({}).toArray();
-  const visits = await visitSchedules.find({}).toArray();
-  const outcomes = await outcomeSnapshots.find({}).toArray();
-  const meds = await medications.find({}).toArray();
+  const [checkins, visits, outcomes, meds] = await Promise.all([
+    symptomCheckins.find({}).sort({ recordedAt: 1 }).toArray(),
+    visitSchedules.find({}).sort({ scheduledAt: 1 }).toArray(),
+    outcomeSnapshots.find({}).sort({ recordedAt: 1 }).toArray(),
+    medications.find({}).toArray(),
+  ]);
 
   const urgentCheckins = checkins.filter((c) => c.alertLevel === "urgent").length;
   const missedVisits = visits.filter((v) => v.status === "missed").length;
@@ -316,15 +318,28 @@ export async function getPalliativeProgramMetrics() {
     ? Math.round(meds.reduce((sum, med) => sum + med.adherence, 0) / meds.length)
     : 0;
 
+  const windowStart = new Date();
+  windowStart.setDate(windowStart.getDate() - 13);
+  windowStart.setHours(0, 0, 0, 0);
+  const trendSource = outcomes.filter((row) => new Date(row.recordedAt) >= windowStart);
   const trend = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (13 - i));
-    return {
-      day: d.toISOString().slice(5, 10),
-      symptom: Math.max(25, 70 - i * 1.5 + Math.round(Math.sin(i / 2) * 6)),
-      qol: Math.min(90, 52 + i * 1.4 + Math.round(Math.cos(i / 3) * 4)),
-      adherence: Math.min(98, 80 + Math.round(Math.sin(i / 2.5) * 6 + i * 0.4)),
-    };
+    const d = new Date(windowStart);
+    d.setDate(windowStart.getDate() + i);
+    const dayKey = d.toISOString().slice(5, 10);
+    const daily = trendSource.filter((row) => {
+      const rowDay = new Date(row.recordedAt).toISOString().slice(5, 10);
+      return rowDay === dayKey;
+    });
+    const symptom = daily.length
+      ? Math.round(daily.reduce((sum, row) => sum + row.symptomScore, 0) / daily.length)
+      : 0;
+    const qol = daily.length
+      ? Math.round(daily.reduce((sum, row) => sum + row.qualityOfLifeScore, 0) / daily.length)
+      : 0;
+    const adherence = daily.length
+      ? Math.round(daily.reduce((sum, row) => sum + row.adherenceScore, 0) / daily.length)
+      : 0;
+    return { day: dayKey, symptom, qol, adherence };
   });
 
   return {
@@ -339,13 +354,33 @@ export async function getPalliativeProgramMetrics() {
 }
 
 export async function getAdherenceTrend() {
+  const { outcomeSnapshots, medications } = await collections();
+  const [snapshots, meds] = await Promise.all([
+    outcomeSnapshots.find({}).sort({ recordedAt: 1 }).toArray(),
+    medications.find({}).toArray(),
+  ]);
+
+  const baseline = meds.length
+    ? Math.round(meds.reduce((sum, med) => sum + med.adherence, 0) / meds.length)
+    : 0;
+
+  const windowStart = new Date();
+  windowStart.setDate(windowStart.getDate() - 13);
+  windowStart.setHours(0, 0, 0, 0);
+  const trendSource = snapshots.filter((row) => new Date(row.recordedAt) >= windowStart);
+
   return Array.from({ length: 14 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (13 - i));
-    return {
-      day: d.toISOString().slice(5, 10),
-      rate: 78 + Math.round(Math.sin(i / 2) * 8 + i * 0.6),
-    };
+    const d = new Date(windowStart);
+    d.setDate(windowStart.getDate() + i);
+    const dayKey = d.toISOString().slice(5, 10);
+    const daily = trendSource.filter((row) => {
+      const rowDay = new Date(row.recordedAt).toISOString().slice(5, 10);
+      return rowDay === dayKey;
+    });
+    const rate = daily.length
+      ? Math.round(daily.reduce((sum, row) => sum + row.adherenceScore, 0) / daily.length)
+      : baseline;
+    return { day: dayKey, rate };
   });
 }
 

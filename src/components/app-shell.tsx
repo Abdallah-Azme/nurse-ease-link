@@ -22,8 +22,10 @@ import {
   LogOut,
   Inbox,
   UserCog,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
-import { type ReactNode } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { signOut } from "next-auth/react";
 
 import { cn } from "@/lib/utils";
@@ -88,6 +90,31 @@ export function AppShell({
   const { theme, setTheme } = useTheme();
   const nav = NAV[role];
   const RoleIcon = ROLE_META[role].icon;
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreItems = useMemo(() => {
+    if (role === "patient") {
+      return [
+        { href: "/patient/assistant", label: "AI Assistant", icon: Sparkles },
+        { href: "/notifications/preferences", label: "Settings", icon: UserCog },
+      ];
+    }
+    if (role === "nurse") {
+      return [
+        { href: "/nurse/alerts", label: "Alerts", icon: Bell },
+        { href: "/notifications/preferences", label: "Settings", icon: UserCog },
+      ];
+    }
+    if (role === "doctor") {
+      return [
+        { href: "/doctor/appointments", label: "Appointments", icon: Calendar },
+        { href: "/notifications/preferences", label: "Settings", icon: UserCog },
+      ];
+    }
+    return [
+      { href: "/admin/analytics", label: "Analytics", icon: Activity },
+      { href: "/notifications/preferences", label: "Settings", icon: UserCog },
+    ];
+  }, [role]);
 
   return (
     <div className="flex min-h-screen min-h-dvh w-full bg-background text-foreground">
@@ -184,8 +211,8 @@ export function AppShell({
         </header>
 
         <nav className="mobile-bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-card/95 backdrop-blur overflow-x-auto">
-          <div className="flex min-w-max justify-around py-2 px-2 gap-1">
-            {nav.map(({ href, label, icon: Icon }) => {
+          <div className="flex min-w-max justify-around py-1.5 px-1 gap-1">
+            {nav.slice(0, 5).map(({ href, label, icon: Icon }) => {
               const active =
                 pathname === href || (href !== `/${role}` && pathname.startsWith(href));
               return (
@@ -193,33 +220,91 @@ export function AppShell({
                   key={href}
                   href={href}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px]",
+                    "flex min-w-[56px] flex-col items-center gap-0.5 px-1.5 py-1 text-[9px] leading-none text-center",
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                 >
-                  <Icon className="h-5 w-5" />
-                  {label}
+                  <Icon className="h-4.5 w-4.5" />
+                  <span className="max-w-[56px] truncate">{label}</span>
                 </Link>
               );
             })}
-            <Link
-              href="/notifications/preferences"
-              className="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] text-muted-foreground"
-            >
-              <UserCog className="h-5 w-5" />
-              Settings
-            </Link>
             <button
-              onClick={() => signOut({ redirectTo: "/" } as never)}
-              className="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] text-muted-foreground"
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className={cn(
+                "flex min-w-[56px] flex-col items-center gap-0.5 px-1.5 py-1 text-[9px] leading-none text-center text-muted-foreground",
+                moreOpen && "text-primary",
+              )}
+              aria-label="Open more actions"
             >
-              <LogOut className="h-5 w-5" />
-              Sign out
+              <MoreHorizontal className="h-4.5 w-4.5" />
+              <span className="max-w-[56px] truncate">More</span>
             </button>
           </div>
         </nav>
 
-        <main className="mobile-main flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-10 max-w-[1400px] w-full mx-auto">
+        {moreOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/40"
+              aria-label="Close more actions"
+              onClick={() => setMoreOpen(false)}
+            />
+            <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t bg-card p-4 shadow-2xl">
+              <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-display text-lg font-semibold">More actions</div>
+                  <div className="text-xs text-muted-foreground">
+                    Additional workspace actions and settings
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen(false)}
+                  className="h-9 w-9 grid place-items-center rounded-lg border bg-background"
+                  aria-label="Close menu"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-4 grid gap-2">
+                {moreItems.map(({ href, label, icon: Icon }) => {
+                  const active = pathname === href || pathname.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setMoreOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm",
+                        active ? "border-primary bg-primary/5 text-primary" : "bg-background",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="font-medium">{label}</span>
+                    </Link>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    void signOut({ redirectTo: "/" } as never);
+                  }}
+                  className="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm bg-background"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="font-medium">Sign out</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <main className="mobile-main flex-1 px-4 lg:px-8 py-6 pb-20 lg:pb-10 max-w-[1400px] w-full mx-auto">
           {children}
         </main>
       </div>

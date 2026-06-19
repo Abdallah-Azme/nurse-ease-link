@@ -32,10 +32,10 @@ export default async function PatientHomePage() {
   const alerts = await getAlertsForPatients([patientId]);
   const appointments = await getAppointmentsForPatient(patientId);
 
-  const latestBp = vitals.bloodPressure.at(-1)!;
-  const latestBg = vitals.bloodSugar.at(-1)!;
-  const latestHr = vitals.heartRate.at(-1)!;
-  const latestSpo2 = vitals.oxygen.at(-1)!;
+  const latestBp = vitals.bloodPressure.at(-1);
+  const latestBg = vitals.bloodSugar.at(-1);
+  const latestHr = vitals.heartRate.at(-1);
+  const latestSpo2 = vitals.oxygen.at(-1);
   const adherenceAvg = medications.length
     ? Math.round(medications.reduce((s, m) => s + m.adherence, 0) / medications.length)
     : 0;
@@ -60,7 +60,7 @@ export default async function PatientHomePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <MetricCard
           label="Blood pressure"
-          value={`${latestBp.systolic}/${latestBp.diastolic}`}
+          value={latestBp ? `${latestBp.systolic}/${latestBp.diastolic}` : "No data"}
           unit="mmHg"
           icon={Heart}
           accent="text-destructive"
@@ -68,7 +68,7 @@ export default async function PatientHomePage() {
         />
         <MetricCard
           label="Blood sugar"
-          value={`${latestBg.fasting}`}
+          value={latestBg ? `${latestBg.fasting}` : "No data"}
           unit="mg/dL"
           icon={Droplet}
           accent="text-chart-3"
@@ -76,7 +76,7 @@ export default async function PatientHomePage() {
         />
         <MetricCard
           label="Heart rate"
-          value={`${latestHr.bpm}`}
+          value={latestHr ? `${latestHr.bpm}` : "No data"}
           unit="bpm"
           icon={Activity}
           accent="text-primary"
@@ -84,7 +84,7 @@ export default async function PatientHomePage() {
         />
         <MetricCard
           label="Oxygen"
-          value={`${latestSpo2.spo2}%`}
+          value={latestSpo2 ? `${latestSpo2.spo2}%` : "No data"}
           unit="SpO₂"
           icon={Wind}
           accent="text-success"
@@ -97,12 +97,20 @@ export default async function PatientHomePage() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-sm text-muted-foreground">Blood pressure · last 14 days</div>
-              <div className="font-display text-xl font-semibold mt-0.5">Trending stable</div>
+              <div className="font-display text-xl font-semibold mt-0.5">
+                {vitals.bloodPressure.length ? "Trending stable" : "No readings yet"}
+              </div>
             </div>
             <TrendingUp className="h-5 w-5 text-success" />
           </div>
           <div className="h-56">
-            <BloodPressureChart data={vitals.bloodPressure} />
+            {vitals.bloodPressure.length ? (
+              <BloodPressureChart data={vitals.bloodPressure} />
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
+                No blood pressure readings available yet.
+              </div>
+            )}
           </div>
         </div>
 
@@ -159,20 +167,32 @@ export default async function PatientHomePage() {
             <div className="text-sm font-medium">Upcoming</div>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
-            {appointments.map((a) => (
-              <div key={a.id} className="rounded-lg border bg-background/40 p-3">
-                <div className="text-sm font-medium">{a.staffName}</div>
-                <div className="text-xs text-muted-foreground">
-                  {a.whenLabel} · {a.reason}
+            {appointments.length ? (
+              appointments.map((a) => (
+                <div key={a.id} className="rounded-lg border bg-background/40 p-3">
+                  <div className="text-sm font-medium">{a.staffName}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {a.whenLabel} · {a.reason}
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-dashed bg-background/30 p-3 text-sm text-muted-foreground">
+                No upcoming appointments.
               </div>
-            ))}
-            {alerts.map((a) => (
-              <div key={a.id} className="rounded-lg border border-warning/30 bg-warning/10 p-3">
-                <div className="text-sm font-medium text-warning-foreground">{a.message}</div>
-                <div className="text-xs text-muted-foreground">{a.time}</div>
+            )}
+            {alerts.length ? (
+              alerts.map((a) => (
+                <div key={a.id} className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+                  <div className="text-sm font-medium text-warning-foreground">{a.message}</div>
+                  <div className="text-xs text-muted-foreground">{a.time}</div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-lg border border-dashed bg-background/30 p-3 text-sm text-muted-foreground">
+                No active alerts.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

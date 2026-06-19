@@ -37,7 +37,13 @@ export function FcmRegistration() {
         const app = getApps().length ? getApps()[0]! : initializeApp(config);
 
         if ("serviceWorker" in navigator) {
-          await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
+          const swUrl =
+            `/firebase-messaging-sw.js?apiKey=${encodeURIComponent(config.apiKey)}` +
+            `&authDomain=${encodeURIComponent(config.authDomain)}` +
+            `&projectId=${encodeURIComponent(config.projectId)}` +
+            `&messagingSenderId=${encodeURIComponent(config.messagingSenderId)}` +
+            `&appId=${encodeURIComponent(config.appId)}`;
+          await navigator.serviceWorker.register(swUrl, { scope: "/" });
         }
 
         const permission =

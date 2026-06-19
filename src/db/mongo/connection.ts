@@ -22,7 +22,12 @@ export async function getMongoDb(): Promise<Db> {
     return globalForMongo.mongoDb;
   }
 
-  const client = globalForMongo.mongoClient ?? new MongoClient(getUri());
+  const client =
+    globalForMongo.mongoClient ??
+    new MongoClient(getUri(), {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
   if (!globalForMongo.mongoClient) {
     await client.connect();
     globalForMongo.mongoClient = client;

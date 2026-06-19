@@ -27,6 +27,10 @@ function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
+      if (result.error === "ACCOUNT_PENDING_APPROVAL") {
+        setError("Your staff account is awaiting admin approval.");
+        return;
+      }
       setError("Invalid email or password.");
       return;
     }

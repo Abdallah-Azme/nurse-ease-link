@@ -2,9 +2,10 @@ import Link from "next/link";
 
 import { PageHeader } from "@/components/app-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AssistantChat } from "@/components/patient/assistant-chat";
 import { getEducationResources } from "@/db/queries";
 
-export const metadata = { title: "Patient education · CareConnect" };
+export const metadata = { title: "Patient assistant · CareConnect" };
 
 export default async function AssistantPage() {
   const resources = await getEducationResources("patient");
@@ -12,26 +13,13 @@ export default async function AssistantPage() {
   return (
     <>
       <PageHeader
-        title="Patient education"
-        subtitle="Safe, clinician-approved guidance and quick access to your care team."
+        title="Patient assistant"
+        subtitle="Gemini-powered education with quick access to your care team."
       />
       <div className="grid lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Approved resources</CardTitle>
-            <CardDescription>
-              This area now shows approved education content rather than a simulated assistant.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {resources.map((resource) => (
-              <div key={resource.id} className="rounded-lg border p-3">
-                <div className="font-medium">{resource.title}</div>
-                <div className="text-sm text-muted-foreground mt-1">{resource.summary}</div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-2">
+          <AssistantChat />
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Need help now?</CardTitle>
@@ -55,6 +43,20 @@ export default async function AssistantPage() {
           </CardContent>
         </Card>
       </div>
+      <Card className="mt-5">
+        <CardHeader>
+          <CardTitle>Approved resources</CardTitle>
+          <CardDescription>Clinician-reviewed education content from the platform.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {resources.map((resource) => (
+            <div key={resource.id} className="rounded-lg border p-3">
+              <div className="font-medium">{resource.title}</div>
+              <div className="text-sm text-muted-foreground mt-1">{resource.summary}</div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </>
   );
 }
