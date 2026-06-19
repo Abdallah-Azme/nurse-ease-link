@@ -65,7 +65,9 @@ Copy `.env.example` to `.env` and set your MongoDB Atlas URI:
 MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/careconnect?appName=Cluster0
 MONGODB_DB_NAME=careconnect
 AUTH_SECRET=your-secret-here
-AUTH_URL=http://localhost:3000
+# On Vercel, do not point AUTH_URL at localhost.
+# Either remove AUTH_URL entirely or set it to your deployed app URL.
+AUTH_TRUST_HOST=true
 ```
 
 ## Firebase push notifications
