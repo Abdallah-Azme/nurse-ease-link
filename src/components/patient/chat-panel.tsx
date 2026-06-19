@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Send, Stethoscope } from "lucide-react";
+import { toast } from "sonner";
 
-import { sendMessage } from "@/actions/messages";
+import { markThreadAsRead, sendMessage } from "@/actions/messages";
 
 type Msg = {
   id: string;
@@ -14,22 +15,26 @@ type Msg = {
 };
 
 export function ChatPanel({
+  nurseThreadId,
+  doctorThreadId,
   patientId,
   nurseId,
   nurseName,
   doctorId,
   doctorName,
   initialNurseMessages,
-  initialDoctorMessage,
+  initialDoctorMessages,
   currentUserId,
 }: {
+  nurseThreadId: string;
+  doctorThreadId: string;
   patientId: string;
   nurseId: string;
   nurseName: string;
   doctorId: string;
   doctorName: string;
   initialNurseMessages: Msg[];
-  initialDoctorMessage: string;
+  initialDoctorMessages: Msg[];
   currentUserId: string;
 }) {
   const router = useRouter();
@@ -43,14 +48,12 @@ export function ChatPanel({
     time: m.createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
   }));
 
-  const doctorMsgs = [
-    {
-      id: "d1",
-      from: "them" as const,
-      text: initialDoctorMessage,
-      time: "Yesterday",
-    },
-  ];
+  const doctorMsgs = initialDoctorMessages.map((m) => ({
+    id: m.id,
+    from: m.senderId === currentUserId ? ("me" as const) : ("them" as const),
+    text: m.body,
+    time: m.createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+  }));
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -60,7 +63,13 @@ export function ChatPanel({
     if (result.ok) {
       setInput("");
       router.refresh();
+    } else {
+      toast.error(result.message);
     }
+  }
+
+  async function markRead() {
+    await markThreadAsRead(tab === "nurse" ? nurseThreadId : doctorThreadId);
   }
 
   const display = tab === "nurse" ? nurseMsgs : doctorMsgs;
@@ -78,30 +87,38 @@ export function ChatPanel({
           </button>
         ))}
       </div>
-      <div className="flex-1 overflow-y-auto p-5 space-y-3">
-        {display.map((m) => (
-          <div key={m.id} className={`flex ${m.from === "me" ? "justify-end" : ""}`}>
-            <div
-              className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${m.from === "me" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-            >
-              {m.text}
+      <div className="flex-1 overflow-y-auto p-5 space-y-3" onMouseEnter={() => void markRead()}>
+        {display.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No messages yet in this thread.</p>
+        ) : (
+          display.map((m) => (
+            <div key={m.id} className={`flex ${m.from === "me" ? "justify-end" : ""}`}>
               <div
-                className={`text-[10px] mt-1 ${m.from === "me" ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${m.from === "me" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
               >
-                {m.time}
+                {m.text}
+                <div
+                  className={`text-[10px] mt-1 ${m.from === "me" ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                >
+                  {m.time}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
       <form onSubmit={handleSend} className="border-t p-3 flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={`Message ${tab === "nurse" ? nurseName.split(" ")[0] : doctorName.split(" ")[1]}…`}
+          placeholder={`Message ${tab === "nurse" ? nurseName.split(" ")[0] : doctorName.split(" ")[1]}...`}
           className="flex-1 rounded-xl border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <button className="inline-flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90">
+        <button
+          type="submit"
+          aria-label="Send message"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90"
+        >
           <Send className="h-4 w-4" />
         </button>
       </form>

@@ -2,12 +2,22 @@ import "server-only";
 
 import { collections } from "@/db/mongo/collections";
 import type {
+  AssignmentDoc,
+  AuditLogDoc,
   AlertDoc,
   AppointmentDoc,
+  CommunicationLogDoc,
+  CarePlanDoc,
   EmergencyDoc,
+  OutcomeSnapshotDoc,
   MedicationDoc,
   MedicationLogDoc,
   MessageDoc,
+  NotificationDoc,
+  NotificationDeliveryDoc,
+  OutboxJobDoc,
+  SymptomCheckinDoc,
+  VisitScheduleDoc,
 } from "@/db/mongo/types";
 
 export async function insertEmergency(doc: EmergencyDoc) {
@@ -35,6 +45,14 @@ export async function insertMessage(doc: MessageDoc) {
   await messages.insertOne(doc);
 }
 
+export async function markMessagesRead(threadId: string, recipientId: string) {
+  const { messages } = await collections();
+  await messages.updateMany(
+    { conversationId: threadId, recipientId, readAt: { $exists: false } },
+    { $set: { readAt: new Date() } },
+  );
+}
+
 export async function insertMedicationLog(doc: MedicationLogDoc) {
   const { medicationLogs } = await collections();
   await medicationLogs.insertOne(doc);
@@ -55,6 +73,31 @@ export async function insertAppointment(doc: AppointmentDoc) {
   await appointments.insertOne(doc);
 }
 
+export async function insertSymptomCheckin(doc: SymptomCheckinDoc) {
+  const { symptomCheckins } = await collections();
+  await symptomCheckins.insertOne(doc);
+}
+
+export async function upsertCarePlan(doc: CarePlanDoc) {
+  const { carePlans } = await collections();
+  await carePlans.updateOne({ patientId: doc.patientId }, { $set: doc }, { upsert: true });
+}
+
+export async function insertVisitSchedule(doc: VisitScheduleDoc) {
+  const { visitSchedules } = await collections();
+  await visitSchedules.insertOne(doc);
+}
+
+export async function insertCommunicationLog(doc: CommunicationLogDoc) {
+  const { communicationLogs } = await collections();
+  await communicationLogs.insertOne(doc);
+}
+
+export async function insertOutcomeSnapshot(doc: OutcomeSnapshotDoc) {
+  const { outcomeSnapshots } = await collections();
+  await outcomeSnapshots.insertOne(doc);
+}
+
 export async function findAppointmentById(appointmentId: string) {
   const { appointments } = await collections();
   return appointments.findOne({ id: appointmentId });
@@ -63,6 +106,40 @@ export async function findAppointmentById(appointmentId: string) {
 export async function cancelAppointmentById(appointmentId: string) {
   const { appointments } = await collections();
   await appointments.updateOne({ id: appointmentId }, { $set: { status: "cancelled" } });
+}
+
+export async function insertAssignment(doc: AssignmentDoc) {
+  const { assignments } = await collections();
+  await assignments.insertOne(doc);
+}
+
+export async function insertNotification(doc: NotificationDoc) {
+  const { notifications } = await collections();
+  await notifications.insertOne(doc);
+}
+
+export async function markNotificationRead(
+  notificationId: string,
+  userId: string,
+  readAt = new Date(),
+) {
+  const { notifications } = await collections();
+  return notifications.updateOne({ id: notificationId, userId }, { $set: { readAt } });
+}
+
+export async function insertNotificationDelivery(doc: NotificationDeliveryDoc) {
+  const { notificationDeliveries } = await collections();
+  await notificationDeliveries.insertOne(doc);
+}
+
+export async function insertAuditLog(doc: AuditLogDoc) {
+  const { auditLogs } = await collections();
+  await auditLogs.insertOne(doc);
+}
+
+export async function insertOutboxJob(doc: OutboxJobDoc) {
+  const { outboxJobs } = await collections();
+  await outboxJobs.insertOne(doc);
 }
 
 export async function findMedicationsByPatientIds(patientIds: string[]) {

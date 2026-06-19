@@ -150,6 +150,39 @@
   }
 }
 
+@media (max-width: 1023px) {
+  html,
+  body {
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    touch-action: manipulation;
+  }
+
+  .mobile-safe-header {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+
+  .mobile-bottom-nav {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  .mobile-main {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+}
+
 @utility metric-card {
   @apply rounded-2xl border bg-card p-5 transition-shadow hover:shadow-md;
 }

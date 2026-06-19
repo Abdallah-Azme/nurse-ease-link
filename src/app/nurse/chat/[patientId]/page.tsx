@@ -25,6 +25,7 @@ export default async function NurseChatDetailPage({
     <>
       <PageHeader title="Messages" subtitle={`Conversation with ${patient.name}`} />
       <NurseChatPanel
+        threadId={threadId}
         patientId={patientId}
         patientName={patient.name}
         messages={messages}

@@ -16,6 +16,12 @@ declare module "next-auth" {
       email: string;
       name: string;
       role: Role;
+      notificationPreferences?: {
+        push: boolean;
+        inApp: boolean;
+        email: boolean;
+        quietHours: string;
+      };
     };
   }
 }
@@ -39,10 +45,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        const email = String(credentials.email);
+        const email = String(credentials.email).trim().toLowerCase();
         const password = String(credentials.password);
         const user = await getUserByEmail(email);
-        if (!user) return null;
+        if (!user || (user.status && user.status !== "active")) return null;
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
         return {
@@ -50,6 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           role: user.role as Role,
+          notificationPreferences: user.notificationPreferences,
         };
       },
     }),

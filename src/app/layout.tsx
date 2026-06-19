@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 
 import { FcmRegistration } from "@/components/notifications/fcm-registration";
@@ -15,6 +15,24 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "CareConnect — Modern patient monitoring platform",
   description: "A connected care platform for patients, nurses, doctors, and admins.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "CareConnect",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "CareConnect",
+  },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fcfb" },
+    { media: "(prefers-color-scheme: dark)", color: "#172127" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

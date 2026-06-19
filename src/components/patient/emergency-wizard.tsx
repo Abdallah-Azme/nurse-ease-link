@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { AlertTriangle, CheckCircle2, Phone, Stethoscope } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
-import { triggerEmergency } from "@/actions/emergencies";
+import { triggerEmergency, updateEmergencyAnswers } from "@/actions/emergencies";
+import { getEmergencyPhoneHref } from "@/lib/env";
 
 const QUESTIONS = [
   { q: "Are you experiencing chest pain or pressure?", opts: ["Yes", "No"] },
@@ -17,11 +19,25 @@ export function EmergencyWizard() {
   const [step, setStep] = useState<"idle" | "assess" | "sent">("idle");
   const [answers, setAnswers] = useState<string[]>([]);
   const [idx, setIdx] = useState(0);
+  const [activating, setActivating] = useState(false);
+  const [emergencyId, setEmergencyId] = useState<string | null>(null);
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
-  function start() {
-    setStep("assess");
+  async function start() {
+    setActivating(true);
     setAnswers([]);
     setIdx(0);
+    const result = await triggerEmergency([], idempotencyKey);
+    setActivating(false);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+    setEmergencyId(result.data.id);
+    setStep("assess");
+    toast.success("Emergency alert sent", {
+      description: "Your care team has received an alert. Complete the assessment while you wait.",
+    });
   }
 
   async function answer(opt: string) {
@@ -30,15 +46,13 @@ export function EmergencyWizard() {
     if (idx + 1 < QUESTIONS.length) {
       setIdx(idx + 1);
     } else {
-      const result = await triggerEmergency(next);
-      if (result.ok) {
-        setStep("sent");
-        toast.success("Care team notified", {
-          description: "Your nurse and doctor have been alerted.",
-        });
-      } else {
-        toast.error(result.error);
+      const final = await updateEmergencyAnswers(emergencyId ?? "", next);
+      if (!final.ok) {
+        toast.error(final.message);
+        return;
       }
+      setEmergencyId(final.data.id);
+      setStep("sent");
     }
   }
 
@@ -56,9 +70,11 @@ export function EmergencyWizard() {
           </p>
           <button
             onClick={start}
+            disabled={activating}
             className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-destructive text-destructive-foreground px-8 py-5 text-lg font-semibold hover:bg-destructive/90 shadow-lg shadow-destructive/20 transition active:scale-[0.98]"
           >
-            <AlertTriangle className="h-6 w-6" /> Activate Emergency
+            <AlertTriangle className="h-6 w-6" />
+            {activating ? "Sending alert…" : "Activate Emergency"}
           </button>
           <div className="mt-6 text-xs text-muted-foreground">
             For life-threatening situations, call your local emergency number.
@@ -103,22 +119,26 @@ export function EmergencyWizard() {
           <CheckCircle2 className="h-6 w-6 text-success" />
         </div>
         <div>
-          <h2 className="font-display text-xl font-semibold">Help is on the way</h2>
+          <h2 className="font-display text-xl font-semibold">Emergency alert sent</h2>
           <p className="text-muted-foreground mt-1">
-            Your care team has been notified and will contact you shortly. Stay calm and if symptoms
-            worsen, call emergency services.
+            Your alert was recorded{emergencyId ? ` (case ${emergencyId.slice(0, 8)})` : ""}. This
+            does not confirm that a clinician has acknowledged it. Call emergency services if
+            symptoms are life-threatening or worsening.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="chip bg-muted">
-              <Stethoscope className="h-3 w-3" /> Nurse notified
+              <Stethoscope className="h-3 w-3" /> Alert queued for nurse
             </span>
             <span className="chip bg-muted">
-              <Stethoscope className="h-3 w-3" /> Doctor notified
+              <Stethoscope className="h-3 w-3" /> Alert queued for doctor
             </span>
           </div>
-          <button className="mt-5 inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent">
-            <Phone className="h-4 w-4" /> Call care team
-          </button>
+          <Link
+            href={getEmergencyPhoneHref()}
+            className="mt-5 inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent"
+          >
+            <Phone className="h-4 w-4" /> Call emergency services
+          </Link>
         </div>
       </div>
     </div>

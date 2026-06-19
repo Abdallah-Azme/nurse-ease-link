@@ -1,44 +1,47 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { useState, Suspense } from "react";
-import { Heart, ArrowRight } from "lucide-react";
 import Link from "next/link";
-
-const DEMO_ACCOUNTS = [
-  { role: "patient", email: "patient@careconnect.demo", label: "Patient (Amelia Hart)" },
-  { role: "nurse", email: "nurse@careconnect.demo", label: "Nurse (Jordan Reyes)" },
-  { role: "doctor", email: "doctor@careconnect.demo", label: "Doctor (Dr. Mei Chen)" },
-  { role: "admin", email: "admin@careconnect.demo", label: "Admin (Sasha Ortiz)" },
-];
+import { signIn } from "next-auth/react";
+import { ArrowRight, Heart } from "lucide-react";
+import { Suspense, useState } from "react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("demo123");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const roleHint = searchParams.get("role");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
+
     const result = await signIn("credentials", {
       email,
       password,
       redirect: false,
     });
+
     setLoading(false);
+
     if (result?.error) {
       setError("Invalid email or password.");
       return;
     }
-    const account = DEMO_ACCOUNTS.find((a) => a.email === email);
-    const home = account ? `/${account.role}` : "/";
-    window.location.href = searchParams.get("callbackUrl") ?? home;
+
+    const callbackUrl = searchParams.get("callbackUrl");
+    const safeCallback =
+      callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
+        ? callbackUrl
+        : null;
+    if (safeCallback) {
+      window.location.assign(safeCallback);
+      return;
+    }
+    const session = await fetch("/api/auth/session").then((res) => res.json());
+    window.location.assign(`/${session?.user?.role ?? "patient"}`);
   }
 
   return (
@@ -54,75 +57,71 @@ function LoginForm() {
         <div className="metric-card">
           <h1 className="font-display text-2xl font-semibold">Sign in</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Demo password for all accounts: <code className="text-foreground">demo123</code>
+            Use your assigned workspace credentials.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-sm font-medium" htmlFor="login-email">
+                Email
+              </label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 required
+                autoComplete="email"
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Password</label>
+              <label className="text-sm font-medium" htmlFor="login-password">
+                Password
+              </label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 required
+                autoComplete="current-password"
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            )}
             <button
               type="submit"
               disabled={loading}
               className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Signing in…" : "Sign in"} <ArrowRight className="h-4 w-4" />
+              {loading ? "Signing in..." : "Sign in"} <ArrowRight className="h-4 w-4" />
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">
-              Quick demo login
-            </p>
-            <div className="grid gap-2">
-              {DEMO_ACCOUNTS.filter((a) => !roleHint || a.role === roleHint).map((a) => (
-                <button
-                  key={a.email}
-                  type="button"
-                  onClick={() => {
-                    setEmail(a.email);
-                    setPassword("demo123");
-                  }}
-                  className="text-left rounded-lg border bg-background/40 px-3 py-2 text-sm hover:bg-accent transition"
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Need an account?{" "}
+          <Link href="/register" className="font-medium text-primary hover:underline">
+            Register
+          </Link>
+        </p>
+        <p className="text-center text-xs text-muted-foreground mt-3">
           <Link href="/" className="hover:text-foreground">
-            ← Back to home
+            &larr; Back to home
           </Link>
         </p>
       </div>
     </div>
   );
 }
-
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen grid place-items-center">Loading…</div>}>
+    <Suspense fallback={<div className="min-h-screen grid place-items-center">Loading...</div>}>
       <LoginForm />
     </Suspense>
   );

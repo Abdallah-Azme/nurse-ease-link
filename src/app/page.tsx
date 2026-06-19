@@ -23,11 +23,14 @@ export default function LandingPage() {
           <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
             Sign in
           </Link>
+          <Link href="/register" className="text-sm text-muted-foreground hover:text-foreground">
+            Register
+          </Link>
           <Link
-            href="/login?role=patient"
+            href="/login"
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90"
           >
-            Open demo <ArrowRight className="h-3.5 w-3.5" />
+            Sign in <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </nav>
       </header>
@@ -42,32 +45,14 @@ export default function LandingPage() {
           </h1>
           <p className="mt-5 text-lg text-muted-foreground max-w-2xl">
             CareConnect helps care teams monitor vitals, medication adherence, and emergencies in
-            one calm, modern workspace — built for patients, nurses, doctors, and administrators.
+            one calm, modern workspace built for patients, nurses, doctors, and administrators.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
-              href="/login?role=patient"
+              href="/login"
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground px-5 py-3 text-sm font-medium hover:bg-primary/90 shadow-sm"
             >
-              Enter as Patient <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/login?role=nurse"
-              className="rounded-lg border bg-card px-5 py-3 text-sm font-medium hover:bg-accent"
-            >
-              Enter as Nurse
-            </Link>
-            <Link
-              href="/login?role=doctor"
-              className="rounded-lg border bg-card px-5 py-3 text-sm font-medium hover:bg-accent"
-            >
-              Enter as Doctor
-            </Link>
-            <Link
-              href="/login?role=admin"
-              className="rounded-lg border bg-card px-5 py-3 text-sm font-medium hover:bg-accent"
-            >
-              Enter as Admin
+              Enter <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -123,7 +108,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        CareConnect demo · Not for clinical use
+        CareConnect · Clinical operations workspace
       </footer>
     </div>
   );

@@ -11,6 +11,7 @@ export function parseConditions(conditions: string[] | string): string[] {
 }
 
 export { getUserByEmail, getUserById } from "./users";
+export { getOrCreateConversation } from "./conversations";
 
 async function mapPatientRow(userId: string) {
   const { users, patientProfiles } = await collections();
@@ -75,6 +76,7 @@ export async function getAllStaff() {
       id: user.id,
       name: user.name,
       role: user.role as "nurse" | "doctor",
+      status: user.status ?? "active",
       specialty: profile.specialty ?? undefined,
       patientsCount: profile.patientsCount,
     });
@@ -176,7 +178,64 @@ export async function getAllAlerts(includeResolved = false) {
 
 export async function getMessagesForThread(threadId: string) {
   const { messages } = await collections();
-  return messages.find({ threadId }).sort({ createdAt: 1 }).toArray();
+  return messages.find({ conversationId: threadId }).sort({ createdAt: 1 }).toArray();
+}
+
+export async function getUnreadMessageCountForUser(userId: string) {
+  const { messages } = await collections();
+  return messages.countDocuments({ recipientId: userId, readAt: { $exists: false } });
+}
+
+export async function getUnreadNotificationCountForUser(userId: string) {
+  const { notifications } = await collections();
+  return notifications.countDocuments({ userId, readAt: { $exists: false } });
+}
+
+export async function getMessageThreadsForUser(userId: string) {
+  const { messages, users } = await collections();
+  const rows = await messages
+    .find({ $or: [{ senderId: userId }, { recipientId: userId }] })
+    .toArray();
+  const grouped = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const threadId = row.conversationId;
+    if (!grouped.has(threadId)) grouped.set(threadId, []);
+    grouped.get(threadId)!.push(row);
+  }
+
+  const result = [];
+  for (const [threadId, threadMessages] of grouped.entries()) {
+    const last = [...threadMessages].sort(
+      (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+    )[0];
+    const unreadCount = threadMessages.filter((m) => m.recipientId === userId && !m.readAt).length;
+    const otherId = last.senderId === userId ? last.recipientId : last.senderId;
+    const other = await users.findOne({ id: otherId });
+    result.push({
+      threadId,
+      participantId: otherId,
+      participantName: other?.name ?? "Unknown",
+      participantRole: other?.role ?? "patient",
+      lastMessage: last.body,
+      lastMessageAt: last.createdAt,
+      unreadCount,
+    });
+  }
+  return result.sort((a, b) => +new Date(b.lastMessageAt) - +new Date(a.lastMessageAt));
+}
+
+export async function getNotificationFeedForUser(userId: string) {
+  const { notifications } = await collections();
+  const rows = await notifications.find({ userId }).sort({ createdAt: -1 }).toArray();
+  return rows.map((n) => ({
+    id: n.id,
+    type: n.type as "alert" | "message" | "system",
+    title: n.title,
+    body: n.body,
+    createdAt: n.createdAt,
+    url: n.deepLink,
+    unread: !n.readAt,
+  }));
 }
 
 export async function getThreadId(patientId: string, staffId: string) {
@@ -185,14 +244,98 @@ export async function getThreadId(patientId: string, staffId: string) {
 
 export async function getAppointmentsForPatient(patientId: string) {
   const { appointments } = await collections();
-  return appointments.find({ patientId, status: "scheduled" }).toArray();
+  return appointments.find({ patientId, status: "scheduled" }).sort({ scheduledAt: 1 }).toArray();
 }
 
 export async function getAppointmentsForDoctor(doctorId: string) {
   const patientIds = (await getPatientsForDoctor(doctorId)).map((p) => p.id);
   if (!patientIds.length) return [];
   const { appointments } = await collections();
-  return appointments.find({ patientId: { $in: patientIds }, status: "scheduled" }).toArray();
+  return appointments
+    .find({ patientId: { $in: patientIds }, status: "scheduled" })
+    .sort({ scheduledAt: 1 })
+    .toArray();
+}
+
+export async function getSymptomCheckinsForPatient(patientId: string) {
+  const { symptomCheckins } = await collections();
+  return symptomCheckins.find({ patientId }).sort({ recordedAt: -1 }).toArray();
+}
+
+export async function getCarePlanForPatient(patientId: string) {
+  const { carePlans } = await collections();
+  return carePlans.findOne({ patientId });
+}
+
+export async function getVisitSchedulesForPatient(patientId: string) {
+  const { visitSchedules } = await collections();
+  return visitSchedules.find({ patientId }).sort({ scheduledAt: 1 }).toArray();
+}
+
+export async function getOverdueVisitSchedules() {
+  const { visitSchedules } = await collections();
+  return visitSchedules
+    .find({ status: "scheduled", scheduledAt: { $lt: new Date() } })
+    .sort({ scheduledAt: 1 })
+    .toArray();
+}
+
+export async function getEducationResources(audience?: "patient" | "caregiver" | "staff") {
+  const { educationResources } = await collections();
+  const filter = audience ? { audience } : {};
+  return educationResources.find(filter).sort({ category: 1, title: 1 }).toArray();
+}
+
+export async function getCommunicationLogsForPatient(patientId: string) {
+  const { communicationLogs } = await collections();
+  return communicationLogs.find({ patientId }).sort({ createdAt: -1 }).toArray();
+}
+
+export async function getOutcomeSnapshotsForPatient(patientId: string) {
+  const { outcomeSnapshots } = await collections();
+  return outcomeSnapshots.find({ patientId }).sort({ recordedAt: 1 }).toArray();
+}
+
+export async function getPalliativeProgramMetrics() {
+  const { symptomCheckins, visitSchedules, outcomeSnapshots, medications } = await collections();
+  const checkins = await symptomCheckins.find({}).toArray();
+  const visits = await visitSchedules.find({}).toArray();
+  const outcomes = await outcomeSnapshots.find({}).toArray();
+  const meds = await medications.find({}).toArray();
+
+  const urgentCheckins = checkins.filter((c) => c.alertLevel === "urgent").length;
+  const missedVisits = visits.filter((v) => v.status === "missed").length;
+  const scheduledVisits = visits.filter((v) => v.status === "scheduled").length;
+  const avgSymptomScore = outcomes.length
+    ? Math.round(outcomes.reduce((sum, row) => sum + row.symptomScore, 0) / outcomes.length)
+    : 0;
+  const avgQualityOfLife = outcomes.length
+    ? Math.round(outcomes.reduce((sum, row) => sum + row.qualityOfLifeScore, 0) / outcomes.length)
+    : 0;
+  const avgAdherence = meds.length
+    ? Math.round(meds.reduce((sum, med) => sum + med.adherence, 0) / meds.length)
+    : 0;
+
+  const trend = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (13 - i));
+    return {
+      day: d.toISOString().slice(5, 10),
+      symptom: Math.max(25, 70 - i * 1.5 + Math.round(Math.sin(i / 2) * 6)),
+      qol: Math.min(90, 52 + i * 1.4 + Math.round(Math.cos(i / 3) * 4)),
+      adherence: Math.min(98, 80 + Math.round(Math.sin(i / 2.5) * 6 + i * 0.4)),
+    };
+  });
+
+  return {
+    urgentCheckins,
+    missedVisits,
+    scheduledVisits,
+    avgSymptomScore,
+    avgQualityOfLife,
+    avgAdherence,
+    trend,
+  };
 }
 
 export async function getAdherenceTrend() {
@@ -207,7 +350,7 @@ export async function getAdherenceTrend() {
 }
 
 export async function getPlatformStats() {
-  const { patientProfiles, users } = await collections();
+  const { patientProfiles, users, vitalsReadings } = await collections();
   const totalPatients = await patientProfiles.countDocuments();
   const staffRows = await users.find({ role: { $in: ["nurse", "doctor"] } }).toArray();
   const nurses = staffRows.filter((s) => s.role === "nurse").length;
@@ -221,7 +364,10 @@ export async function getPlatformStats() {
     totalPatients,
     activeNurses: nurses,
     activeDoctors: doctors,
-    emergenciesThisWeek: 0,
+    emergenciesThisWeek: await vitalsReadings.countDocuments({
+      type: "oxygen",
+      spo2: { $lt: 92 },
+    }),
     avgAdherence: Math.round(avgAdherence),
     highRisk,
   };

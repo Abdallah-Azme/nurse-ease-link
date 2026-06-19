@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getPatientWithProfile, getUserById, updatePatientAssignments } from "@/db/queries";
+import { insertAssignment, insertAuditLog, insertNotification } from "@/db/repositories/writes";
 import { fail, ok, type ActionResult } from "@/lib/action-result";
-import { sendPushToUsers } from "@/lib/firebase/send-push";
 import { requireRoleAction } from "@/lib/safe-action";
 
 const assignmentSchema = z.object({
@@ -20,7 +20,7 @@ export async function updateAssignments(
   assignedDoctorId: string,
 ): Promise<ActionResult<void>> {
   try {
-    await requireRoleAction("admin");
+    const session = await requireRoleAction("admin");
     const parsed = assignmentSchema.safeParse({
       patientId,
       assignedNurseId,
@@ -37,28 +37,52 @@ export async function updateAssignments(
       parsed.data.assignedNurseId,
       parsed.data.assignedDoctorId,
     );
-
-    if (before?.assignedNurseId !== parsed.data.assignedNurseId) {
-      await sendPushToUsers([parsed.data.assignedNurseId], {
-        title: "New patient assignment",
-        body: `You have been assigned to ${patientName}.`,
-        url: "/nurse/patients",
-        event: "assignment_nurse",
-      });
-    }
-
-    if (before?.assignedDoctorId !== parsed.data.assignedDoctorId) {
-      await sendPushToUsers([parsed.data.assignedDoctorId], {
-        title: "New patient assignment",
-        body: `You have been assigned to ${patientName}.`,
-        url: "/doctor/patients",
-        event: "assignment_doctor",
-      });
-    }
+    await insertAssignment({
+      id: crypto.randomUUID(),
+      patientId: parsed.data.patientId,
+      role: "nurse",
+      staffId: parsed.data.assignedNurseId,
+      startsAt: new Date(),
+      changedBy: session.user.id,
+      version: 1,
+    });
+    await insertAssignment({
+      id: crypto.randomUUID(),
+      patientId: parsed.data.patientId,
+      role: "doctor",
+      staffId: parsed.data.assignedDoctorId,
+      startsAt: new Date(),
+      changedBy: session.user.id,
+      version: 1,
+    });
+    await insertAuditLog({
+      id: crypto.randomUUID(),
+      actorId: session.user.id,
+      actorRole: "admin",
+      action: "assignment.updated",
+      entityType: "patient",
+      entityId: parsed.data.patientId,
+      metadata: parsed.data,
+      correlationId: crypto.randomUUID(),
+      createdAt: new Date(),
+    });
+    await insertNotification({
+      id: crypto.randomUUID(),
+      userId: parsed.data.patientId,
+      type: "assignment_changed",
+      title: "Your care team changed",
+      body: "Your assigned nurse or doctor has been updated.",
+      deepLink: "/patient",
+      priority: "medium",
+      sourceType: "patient",
+      sourceId: parsed.data.patientId,
+      createdAt: new Date(),
+    });
 
     revalidatePath("/admin/assignments");
     revalidatePath("/nurse");
     revalidatePath("/doctor");
+    revalidatePath("/patient");
     return ok(undefined);
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Failed to update assignments.");

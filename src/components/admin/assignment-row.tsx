@@ -22,13 +22,19 @@ export function AssignmentRow({
 }) {
   const [nurseId, setNurseId] = useState(defaultNurseId);
   const [doctorId, setDoctorId] = useState(defaultDoctorId);
+  const [pending, setPending] = useState(false);
 
   async function save(newNurseId: string, newDoctorId: string) {
+    if (pending) return;
+    const confirmed = window.confirm(`Update assignments for ${patientName}?`);
+    if (!confirmed) return;
+    setPending(true);
     const result = await updateAssignments(patientId, newNurseId, newDoctorId);
+    setPending(false);
     if (result.ok) {
       toast.success(`Updated assignments for ${patientName}`);
     } else {
-      toast.error(result.error);
+      toast.error(result.message);
     }
   }
 
@@ -42,6 +48,7 @@ export function AssignmentRow({
             setNurseId(e.target.value);
             void save(e.target.value, doctorId);
           }}
+          disabled={pending}
           className="rounded-lg border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
           {nurses.map((n) => (
@@ -58,6 +65,7 @@ export function AssignmentRow({
             setDoctorId(e.target.value);
             void save(nurseId, e.target.value);
           }}
+          disabled={pending}
           className="rounded-lg border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
           {doctors.map((d) => (

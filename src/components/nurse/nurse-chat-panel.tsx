@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Send } from "lucide-react";
+import { toast } from "sonner";
 
-import { sendMessage } from "@/actions/messages";
+import { markThreadAsRead, sendMessage } from "@/actions/messages";
 
 type Msg = {
   id: string;
@@ -14,11 +15,13 @@ type Msg = {
 };
 
 export function NurseChatPanel({
+  threadId,
   patientId,
   patientName,
   messages,
   currentUserId,
 }: {
+  threadId: string;
   patientId: string;
   patientName: string;
   messages: Msg[];
@@ -26,6 +29,10 @@ export function NurseChatPanel({
 }) {
   const router = useRouter();
   const [input, setInput] = useState("");
+
+  useEffect(() => {
+    void markThreadAsRead(threadId);
+  }, [threadId]);
 
   const display = messages.map((m) => ({
     id: m.id,
@@ -41,6 +48,8 @@ export function NurseChatPanel({
     if (result.ok) {
       setInput("");
       router.refresh();
+    } else {
+      toast.error(result.message);
     }
   }
 
@@ -70,7 +79,11 @@ export function NurseChatPanel({
           placeholder={`Message ${patientName.split(" ")[0]}…`}
           className="flex-1 rounded-xl border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <button className="inline-flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90">
+        <button
+          type="submit"
+          aria-label="Send message"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary/90"
+        >
           <Send className="h-4 w-4" />
         </button>
       </form>

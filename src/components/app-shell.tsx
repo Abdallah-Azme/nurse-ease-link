@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,7 +13,6 @@ import {
   MessageCircle,
   Moon,
   Pill,
-  Settings,
   Shield,
   Sparkles,
   Stethoscope,
@@ -21,6 +20,8 @@ import {
   Users,
   FileText,
   LogOut,
+  Inbox,
+  UserCog,
 } from "lucide-react";
 import { type ReactNode } from "react";
 import { signOut } from "next-auth/react";
@@ -31,29 +32,37 @@ import type { Role } from "@/auth";
 const NAV: Record<Role, { href: string; label: string; icon: typeof Activity }[]> = {
   patient: [
     { href: "/patient", label: "Overview", icon: LayoutDashboard },
+    { href: "/patient/palliative", label: "Palliative", icon: Heart },
     { href: "/patient/vitals", label: "Vitals", icon: Activity },
     { href: "/patient/medications", label: "Medications", icon: Pill },
     { href: "/patient/assistant", label: "AI Assistant", icon: Sparkles },
     { href: "/patient/chat", label: "Care Team", icon: MessageCircle },
     { href: "/patient/emergency", label: "Emergency", icon: AlertTriangle },
+    { href: "/notifications", label: "Inbox", icon: Inbox },
   ],
   nurse: [
     { href: "/nurse", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/nurse/palliative", label: "Palliative", icon: Heart },
     { href: "/nurse/patients", label: "Patients", icon: Users },
     { href: "/nurse/alerts", label: "Alerts", icon: Bell },
     { href: "/nurse/chat", label: "Messages", icon: MessageCircle },
+    { href: "/notifications", label: "Inbox", icon: Inbox },
   ],
   doctor: [
     { href: "/doctor", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/doctor/palliative", label: "Palliative", icon: Heart },
     { href: "/doctor/patients", label: "Patients", icon: Users },
     { href: "/doctor/appointments", label: "Appointments", icon: Calendar },
     { href: "/doctor/prescriptions", label: "Prescriptions", icon: FileText },
+    { href: "/notifications", label: "Inbox", icon: Inbox },
   ],
   admin: [
     { href: "/admin", label: "Overview", icon: LayoutDashboard },
+    { href: "/admin/palliative", label: "Palliative", icon: Heart },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/assignments", label: "Assignments", icon: Stethoscope },
     { href: "/admin/analytics", label: "Analytics", icon: Activity },
+    { href: "/notifications", label: "Inbox", icon: Inbox },
   ],
 };
 
@@ -81,7 +90,7 @@ export function AppShell({
   const RoleIcon = ROLE_META[role].icon;
 
   return (
-    <div className="flex min-h-screen w-full bg-background text-foreground">
+    <div className="flex min-h-screen min-h-dvh w-full bg-background text-foreground">
       <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground">
         <div className="flex items-center gap-2.5 px-5 py-5 border-b border-sidebar-border">
           <div className="h-9 w-9 grid place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -120,11 +129,14 @@ export function AppShell({
         </nav>
 
         <div className="p-3 border-t border-sidebar-border">
-          <button className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/60">
-            <Settings className="h-4 w-4" /> Settings
-          </button>
+          <Link
+            href="/notifications/preferences"
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/60"
+          >
+            <UserCog className="h-4 w-4" /> Settings
+          </Link>
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => signOut({ redirectTo: "/" } as never)}
             className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/60"
           >
             <LogOut className="h-4 w-4" /> Sign out
@@ -133,7 +145,7 @@ export function AppShell({
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b bg-background/85 backdrop-blur px-4 lg:px-8 py-3">
+        <header className="mobile-safe-header sticky top-0 z-30 flex items-center gap-3 border-b bg-background/85 backdrop-blur px-4 lg:px-8 py-3">
           <div className="lg:hidden flex items-center gap-2">
             <div className="h-8 w-8 grid place-items-center rounded-lg bg-primary text-primary-foreground">
               <Heart className="h-4 w-4" fill="currentColor" />
@@ -144,7 +156,7 @@ export function AppShell({
           <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
             <RoleIcon className="h-4 w-4 text-primary" />
             <span className="font-medium text-foreground">{userName}</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <span>{ROLE_META[role].label}</span>
           </div>
 
@@ -157,40 +169,57 @@ export function AppShell({
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
             <Link
-              href={
-                role === "nurse" ? "/nurse/alerts" : role === "patient" ? "/patient" : `/${role}`
-              }
+              href="/notifications"
               className="h-9 w-9 grid place-items-center rounded-lg border bg-card hover:bg-accent transition relative"
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />
               {alertCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-destructive text-[10px] text-destructive-foreground grid place-items-center">
+                  {alertCount}
+                </span>
               )}
             </Link>
           </div>
         </header>
 
-        <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-card/95 backdrop-blur flex justify-around py-2">
-          {nav.slice(0, 5).map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || (href !== `/${role}` && pathname.startsWith(href));
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px]",
-                  active ? "text-primary" : "text-muted-foreground",
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                {label}
-              </Link>
-            );
-          })}
+        <nav className="mobile-bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-card/95 backdrop-blur overflow-x-auto">
+          <div className="flex min-w-max justify-around py-2 px-2 gap-1">
+            {nav.map(({ href, label, icon: Icon }) => {
+              const active =
+                pathname === href || (href !== `/${role}` && pathname.startsWith(href));
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px]",
+                    active ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  {label}
+                </Link>
+              );
+            })}
+            <Link
+              href="/notifications/preferences"
+              className="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] text-muted-foreground"
+            >
+              <UserCog className="h-5 w-5" />
+              Settings
+            </Link>
+            <button
+              onClick={() => signOut({ redirectTo: "/" } as never)}
+              className="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] text-muted-foreground"
+            >
+              <LogOut className="h-5 w-5" />
+              Sign out
+            </button>
+          </div>
         </nav>
 
-        <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-10 max-w-[1400px] w-full mx-auto">
+        <main className="mobile-main flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-10 max-w-[1400px] w-full mx-auto">
           {children}
         </main>
       </div>

@@ -1,13 +1,20 @@
 import { PageHeader } from "@/components/app-shell";
 import { AdherenceChart, LineVitalsChart } from "@/components/charts/vitals-charts";
-import { getAdherenceTrend, getPlatformStats, getVitalsForPatient } from "@/db/queries";
+import {
+  getAdherenceTrend,
+  getAllPatients,
+  getPlatformStats,
+  getVitalsForPatient,
+} from "@/db/queries";
 
 export const metadata = { title: "Analytics · CareConnect" };
 
 export default async function AdminAnalyticsPage() {
   const platformStats = await getPlatformStats();
   const adherenceTrend = await getAdherenceTrend();
-  const vitals = await getVitalsForPatient("p1");
+  const patients = await getAllPatients();
+  const focus = patients.find(Boolean);
+  const vitals = focus ? await getVitalsForPatient(focus.id) : { heartRate: [] };
 
   return (
     <>
@@ -53,7 +60,9 @@ export default async function AdminAnalyticsPage() {
           </div>
         </div>
         <div className="metric-card">
-          <div className="text-sm font-medium mb-3">Sample population heart rate</div>
+          <div className="text-sm font-medium mb-3">
+            {focus ? `${focus.name} heart rate` : "Population heart rate"}
+          </div>
           <div className="h-[240px]">
             <LineVitalsChart data={vitals.heartRate} dataKey="bpm" />
           </div>

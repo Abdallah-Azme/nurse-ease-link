@@ -1,10 +1,11 @@
 "use client";
 
 import { Check, Clock, Pill, Plus } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { markMedicationTaken } from "@/actions/medications";
+import { markMedicationMissed, markMedicationTaken } from "@/actions/medications";
 
 type Med = {
   id: string;
@@ -26,7 +27,17 @@ export function MedicationList({ medications }: { medications: Med[] }) {
       toast.success(`Marked ${name} as taken`);
       router.refresh();
     } else {
-      toast.error(result.error);
+      toast.error(result.message);
+    }
+  }
+
+  async function miss(id: string, name: string) {
+    const result = await markMedicationMissed(id);
+    if (result.ok) {
+      toast.success(`Marked ${name} as missed`);
+      router.refresh();
+    } else {
+      toast.error(result.message);
     }
   }
 
@@ -67,6 +78,14 @@ export function MedicationList({ medications }: { medications: Med[] }) {
           >
             <Check className="h-4 w-4" /> {m.taken ? "Taken" : "Mark taken"}
           </button>
+          {!m.taken && (
+            <button
+              onClick={() => miss(m.id, m.name)}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-accent"
+            >
+              Mark missed
+            </button>
+          )}
         </div>
       ))}
     </div>
@@ -75,8 +94,11 @@ export function MedicationList({ medications }: { medications: Med[] }) {
 
 export function MedicationListHeader() {
   return (
-    <button className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90">
-      <Plus className="h-4 w-4" /> Add medication
-    </button>
+    <Link
+      href="/patient/chat"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90"
+    >
+      <Plus className="h-4 w-4" /> Request refill
+    </Link>
   );
 }

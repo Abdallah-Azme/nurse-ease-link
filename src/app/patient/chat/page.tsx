@@ -19,8 +19,12 @@ export default async function ChatPage() {
 
   const nurse = await getUserById(patient.assignedNurseId);
   const doctor = await getUserById(patient.assignedDoctorId);
-  const threadId = await getThreadId(patient.id, patient.assignedNurseId);
-  const messages = await getMessagesForThread(threadId);
+  const nurseThreadId = await getThreadId(patient.id, patient.assignedNurseId);
+  const doctorThreadId = await getThreadId(patient.id, patient.assignedDoctorId);
+  const [nurseMessages, doctorMessages] = await Promise.all([
+    getMessagesForThread(nurseThreadId),
+    getMessagesForThread(doctorThreadId),
+  ]);
 
   return (
     <>
@@ -29,17 +33,19 @@ export default async function ChatPage() {
         subtitle="Secure messages with your assigned nurse and doctor."
       />
       <ChatPanel
+        nurseThreadId={nurseThreadId}
+        doctorThreadId={doctorThreadId}
         patientId={patient.id}
         nurseId={patient.assignedNurseId}
         nurseName={nurse?.name ?? "Nurse"}
         doctorId={patient.assignedDoctorId}
         doctorName={doctor?.name ?? "Doctor"}
-        initialNurseMessages={messages}
-        initialDoctorMessage="Hi Amelia, I reviewed your latest BP readings — let's discuss at your appointment Thursday."
+        initialNurseMessages={nurseMessages}
+        initialDoctorMessages={doctorMessages}
         currentUserId={session!.user.id}
       />
       <p className="text-xs text-muted-foreground mt-3">
-        Signed in as {session!.user.name}. Messages are not for emergencies — use the Emergency
+        Signed in as {session!.user.name}. Messages are not for emergencies - use the Emergency
         button.
       </p>
     </>

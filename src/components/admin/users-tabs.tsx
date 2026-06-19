@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { riskBg } from "@/lib/risk";
 import type { RiskLevel } from "@/db/queries";
+import { StaffRegistrationActions } from "@/components/admin/staff-registration-actions";
 
 type Patient = {
   id: string;
@@ -16,6 +17,7 @@ type StaffMember = {
   id: string;
   name: string;
   role: "nurse" | "doctor";
+  status: "active" | "pending" | "inactive";
   specialty?: string;
   patientsCount: number;
 };
@@ -72,6 +74,8 @@ export function UsersTabs({ patients, staff }: { patients: Patient[]; staff: Sta
                 <th>Role</th>
                 <th>Specialty</th>
                 <th>Patients</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -81,6 +85,22 @@ export function UsersTabs({ patients, staff }: { patients: Patient[]; staff: Sta
                   <td className="py-3 capitalize">{s.role}</td>
                   <td className="py-3 text-muted-foreground">{s.specialty}</td>
                   <td className="py-3">{s.patientsCount}</td>
+                  <td className="py-3 capitalize">
+                    <span
+                      className={`chip ${
+                        s.status === "active"
+                          ? "bg-success/10 text-success"
+                          : s.status === "pending"
+                            ? "bg-warning/10 text-warning"
+                            : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {s.status}
+                    </span>
+                  </td>
+                  <td className="py-3">
+                    {s.status === "pending" ? <StaffRegistrationActions userId={s.id} /> : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

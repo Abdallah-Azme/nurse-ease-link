@@ -16,3 +16,11 @@ export async function requireRoleAction(role: Role) {
   }
   return session;
 }
+
+export async function requireActiveAccountAction(allowedRoles?: Role[]) {
+  const session = await getSessionOrThrow();
+  if (allowedRoles && !allowedRoles.includes(session.user.role)) {
+    throw new Error("You do not have permission to perform this action.");
+  }
+  return session;
+}

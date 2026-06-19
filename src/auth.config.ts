@@ -24,7 +24,7 @@ export const authConfig = {
     },
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
-      const protectedPrefixes = ["/patient", "/nurse", "/doctor", "/admin"];
+      const protectedPrefixes = ["/patient", "/nurse", "/doctor", "/admin", "/notifications"];
       const isProtected = protectedPrefixes.some((p) => pathname.startsWith(p));
 
       if (pathname === "/login" && auth?.user) {

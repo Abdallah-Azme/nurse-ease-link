@@ -14,24 +14,30 @@ export default async function NurseAlertsPage() {
     <>
       <PageHeader title="Alerts" subtitle="Respond to patient alerts and escalations." />
       <div className="grid gap-3">
-        {alerts.map((a) => (
-          <div key={a.id} className="metric-card flex flex-wrap items-center gap-4">
-            <div
-              className={`h-2.5 w-2.5 rounded-full shrink-0 ${a.level === "critical" ? "bg-destructive" : a.level === "warning" ? "bg-warning" : "bg-primary"}`}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium">{a.patientName}</div>
-              <div className="text-sm text-muted-foreground">{a.message}</div>
-              <div className="text-xs text-muted-foreground mt-1">{a.time}</div>
-            </div>
-            <span
-              className={`chip ${a.level === "critical" ? "bg-destructive/15 text-destructive" : a.level === "warning" ? "bg-warning/15 text-warning-foreground" : "bg-muted"}`}
-            >
-              {a.level}
-            </span>
-            {!a.resolvedAt && <ResolveAlertButton alertId={a.id} />}
+        {alerts.length === 0 ? (
+          <div className="metric-card text-sm text-muted-foreground">
+            No active alerts for your assigned patients.
           </div>
-        ))}
+        ) : (
+          alerts.map((a) => (
+            <div key={a.id} className="metric-card flex flex-wrap items-center gap-4">
+              <div
+                className={`h-2.5 w-2.5 rounded-full shrink-0 ${a.level === "critical" ? "bg-destructive" : a.level === "warning" ? "bg-warning" : "bg-primary"}`}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium">{a.patientName}</div>
+                <div className="text-sm text-muted-foreground">{a.message}</div>
+                <div className="text-xs text-muted-foreground mt-1">{a.time}</div>
+              </div>
+              <span
+                className={`chip ${a.level === "critical" ? "bg-destructive/15 text-destructive" : a.level === "warning" ? "bg-warning/15 text-warning-foreground" : "bg-muted"}`}
+              >
+                {a.level}
+              </span>
+              {!a.resolvedAt && <ResolveAlertButton alertId={a.id} />}
+            </div>
+          ))
+        )}
       </div>
     </>
   );

@@ -1,29 +1,35 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { resolveAlert } from "@/actions/emergencies";
 
 export function ResolveAlertButton({ alertId }: { alertId: string }) {
   const router = useRouter();
+  const [pending, setPending] = useState(false);
 
   async function handleResolve() {
+    if (pending) return;
+    setPending(true);
     const result = await resolveAlert(alertId);
+    setPending(false);
     if (result.ok) {
       toast.success("Alert resolved");
       router.refresh();
     } else {
-      toast.error(result.error);
+      toast.error(result.message);
     }
   }
 
   return (
     <button
       onClick={handleResolve}
-      className="text-xs rounded-lg border bg-card px-3 py-1.5 hover:bg-accent"
+      disabled={pending}
+      className="text-xs rounded-lg border bg-card px-3 py-1.5 hover:bg-accent disabled:opacity-50"
     >
-      Resolve
+      {pending ? "Resolving..." : "Resolve"}
     </button>
   );
 }

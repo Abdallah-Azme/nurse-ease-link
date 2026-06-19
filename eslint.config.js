@@ -5,7 +5,21 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: [".next", "dist", "drizzle", "src/routes/**", "src/routeTree.gen.ts", "src/router.tsx", "src/start.ts", "src/server.ts", "vite.config.ts"] },
+  {
+    ignores: [
+      ".next",
+      "next-env.d.ts",
+      "dist",
+      "drizzle",
+      "src/routes/**",
+      "src/routeTree.gen.ts",
+      "src/router.tsx",
+      "src/start.ts",
+      "src/server.ts",
+      "vite.config.ts",
+      "legacy-tanstack-archive/**",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

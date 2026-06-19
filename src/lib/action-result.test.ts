@@ -5,13 +5,28 @@ import { riskBg, riskColor } from "@/lib/risk";
 
 describe("action-result", () => {
   it("ok returns success shape", () => {
-    const result = ok({ id: "1" });
-    expect(result).toEqual({ ok: true, data: { id: "1" } });
+    const result = ok({ id: "1" }, { eventId: "event-1", correlationId: "correlation-1" });
+    expect(result).toEqual({
+      ok: true,
+      data: { id: "1" },
+      eventId: "event-1",
+      correlationId: "correlation-1",
+    });
   });
 
   it("fail returns error shape", () => {
-    const result = fail("nope");
-    expect(result).toEqual({ ok: false, error: "nope" });
+    const result = fail("nope", "validation_error", {
+      correlationId: "correlation-1",
+      fieldErrors: { email: ["Invalid email"] },
+    });
+    expect(result).toEqual({
+      ok: false,
+      code: "validation_error",
+      message: "nope",
+      error: "nope",
+      correlationId: "correlation-1",
+      fieldErrors: { email: ["Invalid email"] },
+    });
   });
 });
 

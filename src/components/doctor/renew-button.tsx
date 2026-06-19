@@ -14,7 +14,7 @@ export function RenewButton({ medicationId }: { medicationId: string }) {
       toast.success("Prescription renewed");
       router.refresh();
     } else {
-      toast.error(result.error);
+      toast.error(result.message);
     }
   }
 

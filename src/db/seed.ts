@@ -22,27 +22,83 @@ export async function seed() {
   const passwordHash = await hash("demo123");
 
   const userRows = [
-    { id: "p1", email: "patient@careconnect.demo", name: "Amelia Hart", role: "patient" as const },
-    { id: "p2", email: "marcus@careconnect.demo", name: "Marcus Webb", role: "patient" as const },
+    {
+      id: "p1",
+      email: "patient@careconnect.demo",
+      name: "Amelia Hart",
+      role: "patient" as const,
+      status: "active" as const,
+    },
+    {
+      id: "p2",
+      email: "marcus@careconnect.demo",
+      name: "Marcus Webb",
+      role: "patient" as const,
+      status: "active" as const,
+    },
     {
       id: "p3",
       email: "priya@careconnect.demo",
       name: "Priya Natarajan",
       role: "patient" as const,
+      status: "active" as const,
     },
-    { id: "p4", email: "diego@careconnect.demo", name: "Diego Alvarez", role: "patient" as const },
-    { id: "p5", email: "noor@careconnect.demo", name: "Noor Haddad", role: "patient" as const },
-    { id: "p6", email: "henrik@careconnect.demo", name: "Henrik Larsen", role: "patient" as const },
-    { id: "n1", email: "nurse@careconnect.demo", name: "Jordan Reyes, RN", role: "nurse" as const },
-    { id: "n2", email: "sam@careconnect.demo", name: "Sam Okafor, RN", role: "nurse" as const },
-    { id: "d1", email: "doctor@careconnect.demo", name: "Dr. Mei Chen", role: "doctor" as const },
+    {
+      id: "p4",
+      email: "diego@careconnect.demo",
+      name: "Diego Alvarez",
+      role: "patient" as const,
+      status: "active" as const,
+    },
+    {
+      id: "p5",
+      email: "noor@careconnect.demo",
+      name: "Noor Haddad",
+      role: "patient" as const,
+      status: "active" as const,
+    },
+    {
+      id: "p6",
+      email: "henrik@careconnect.demo",
+      name: "Henrik Larsen",
+      role: "patient" as const,
+      status: "active" as const,
+    },
+    {
+      id: "n1",
+      email: "nurse@careconnect.demo",
+      name: "Jordan Reyes, RN",
+      role: "nurse" as const,
+      status: "active" as const,
+    },
+    {
+      id: "n2",
+      email: "sam@careconnect.demo",
+      name: "Sam Okafor, RN",
+      role: "nurse" as const,
+      status: "active" as const,
+    },
+    {
+      id: "d1",
+      email: "doctor@careconnect.demo",
+      name: "Dr. Mei Chen",
+      role: "doctor" as const,
+      status: "active" as const,
+    },
     {
       id: "d2",
       email: "rafael@careconnect.demo",
       name: "Dr. Rafael Souza",
       role: "doctor" as const,
+      status: "active" as const,
     },
-    { id: "a1", email: "admin@careconnect.demo", name: "Sasha Ortiz", role: "admin" as const },
+    {
+      id: "a1",
+      email: "admin@careconnect.demo",
+      name: "Sasha Ortiz",
+      role: "admin" as const,
+      status: "active" as const,
+    },
   ];
 
   await cols.users.insertMany(userRows.map((u) => ({ ...u, passwordHash, createdAt: now })));
@@ -117,6 +173,27 @@ export async function seed() {
   ];
 
   await cols.patientProfiles.insertMany(patients);
+
+  await cols.patientProfiles.updateOne(
+    { userId: "p1" },
+    {
+      $set: {
+        caregiverName: "Evelyn Hart",
+        caregiverPhone: "+20 100 555 0148",
+        preferredEscalation: "chat",
+      },
+    },
+  );
+  await cols.patientProfiles.updateOne(
+    { userId: "p2" },
+    {
+      $set: {
+        caregiverName: "Daniel Webb",
+        caregiverPhone: "+20 100 555 0199",
+        preferredEscalation: "phone",
+      },
+    },
+  );
 
   await cols.staffProfiles.insertMany([
     { userId: "n1", specialty: "Cardiac care", patientsCount: 4 },
@@ -252,12 +329,12 @@ export async function seed() {
     },
   ]);
 
-  const threadId = "p1-n1";
+  const conversationId = "p1-n1";
   const msgNow = new Date();
   await cols.messages.insertMany([
     {
       id: "c1",
-      threadId,
+      conversationId,
       senderId: "n1",
       recipientId: "p1",
       body: "Good morning Amelia — how did you sleep?",
@@ -265,7 +342,7 @@ export async function seed() {
     },
     {
       id: "c2",
-      threadId,
+      conversationId,
       senderId: "p1",
       recipientId: "n1",
       body: "Slept ok, BP felt a bit high this morning.",
@@ -273,7 +350,7 @@ export async function seed() {
     },
     {
       id: "c3",
-      threadId,
+      conversationId,
       senderId: "n1",
       recipientId: "p1",
       body: "Thanks for logging it. Let's recheck in 30 minutes and I'll review.",
@@ -299,6 +376,172 @@ export async function seed() {
       whenLabel: "Mon, 10:00 AM",
       reason: "Medication review",
       status: "scheduled",
+    },
+  ]);
+
+  await cols.symptomCheckins.insertMany([
+    {
+      id: "sc1",
+      patientId: "p1",
+      recordedAt: new Date(now.getTime() - 26 * 60 * 60 * 1000),
+      pain: 3,
+      nausea: 2,
+      fatigue: 4,
+      appetite: 3,
+      sleep: 2,
+      anxiety: 4,
+      breathlessness: 1,
+      notes: "Pain worse in the evening.",
+      alertLevel: "watch",
+    },
+    {
+      id: "sc2",
+      patientId: "p1",
+      recordedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      pain: 6,
+      nausea: 3,
+      fatigue: 7,
+      appetite: 6,
+      sleep: 5,
+      anxiety: 6,
+      breathlessness: 4,
+      notes: "More shortness of breath after walking.",
+      alertLevel: "urgent",
+    },
+  ]);
+
+  await cols.carePlans.insertOne({
+    id: "cp1",
+    patientId: "p1",
+    summary: "Focus on symptom relief, medication support, and caregiver communication.",
+    updatedAt: new Date(now.getTime() - 6 * 60 * 60 * 1000),
+    nextReviewAt: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
+    goals: [
+      {
+        id: "g1",
+        patientId: "p1",
+        title: "Reduce nightly pain",
+        details: "Keep pain at or below 4/10 with adjusted medication timing and check-ins.",
+        status: "active",
+      },
+      {
+        id: "g2",
+        patientId: "p1",
+        title: "Improve medication adherence",
+        details: "Reach 95% adherence this week with reminders and caregiver support.",
+        status: "active",
+      },
+    ],
+    interventions: [
+      "Daily symptom check-in",
+      "Medication reminder support",
+      "Nurse review after urgent symptom reports",
+    ],
+    caregiverNotes: "Caregiver prefers chat updates after evening check-ins.",
+  });
+
+  await cols.visitSchedules.insertMany([
+    {
+      id: "vs1",
+      patientId: "p1",
+      staffId: "n1",
+      staffName: "Nurse Jordan",
+      scheduledAt: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+      type: "home_visit",
+      status: "scheduled",
+      reason: "Home symptom review and medication reconciliation",
+    },
+    {
+      id: "vs2",
+      patientId: "p1",
+      staffId: "d1",
+      staffName: "Dr. Mei Chen",
+      scheduledAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+      type: "video_call",
+      status: "scheduled",
+      reason: "Review symptom trends and care goals",
+    },
+  ]);
+
+  await cols.educationResources.insertMany([
+    {
+      id: "ed1",
+      title: "Managing pain at home",
+      category: "symptom relief",
+      audience: "patient",
+      summary: "Simple steps for safe pain tracking and when to call the nurse.",
+      content:
+        "Use the symptom check-in daily, take medication as prescribed, and contact the care team if pain rises quickly or becomes severe.",
+    },
+    {
+      id: "ed2",
+      title: "Breathlessness warning signs",
+      category: "red flags",
+      audience: "patient",
+      summary: "Know when breathing changes need urgent escalation.",
+      content:
+        "Rest upright, use the emergency flow if breathlessness is severe, and report any persistent worsening to your nurse.",
+    },
+    {
+      id: "ed3",
+      title: "Caregiver support checklist",
+      category: "caregiver support",
+      audience: "caregiver",
+      summary: "Practical tasks for family caregivers during home palliative care.",
+      content:
+        "Review medications, help with symptom logging, watch for urgent changes, and keep the escalation contact details available.",
+    },
+  ]);
+
+  await cols.communicationLogs.insertMany([
+    {
+      id: "cl1",
+      patientId: "p1",
+      authorId: "n1",
+      authorName: "Jordan Reyes, RN",
+      channel: "call",
+      summary:
+        "Reviewed pain trends, reinforced medication timing, and checked caregiver availability.",
+      createdAt: new Date(now.getTime() - 12 * 60 * 60 * 1000),
+    },
+    {
+      id: "cl2",
+      patientId: "p1",
+      authorId: "d1",
+      authorName: "Dr. Mei Chen",
+      channel: "note",
+      summary: "Care plan updated to prioritize symptom monitoring and weekly review.",
+      createdAt: new Date(now.getTime() - 7 * 60 * 60 * 1000),
+    },
+  ]);
+
+  await cols.outcomeSnapshots.insertMany([
+    {
+      id: "os1",
+      patientId: "p1",
+      recordedAt: new Date(now.getTime() - 13 * 24 * 60 * 60 * 1000),
+      symptomScore: 62,
+      adherenceScore: 86,
+      qualityOfLifeScore: 58,
+      alertCount: 3,
+    },
+    {
+      id: "os2",
+      patientId: "p1",
+      recordedAt: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000),
+      symptomScore: 54,
+      adherenceScore: 90,
+      qualityOfLifeScore: 64,
+      alertCount: 2,
+    },
+    {
+      id: "os3",
+      patientId: "p1",
+      recordedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      symptomScore: 46,
+      adherenceScore: 94,
+      qualityOfLifeScore: 71,
+      alertCount: 1,
     },
   ]);
 
